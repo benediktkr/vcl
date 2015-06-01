@@ -20,8 +20,8 @@ I have submitted an improvement that hasn't been added yet, see
 λ > putStrLn $ printAcl acl
 acl testacl {
     ! 10.40.20.1/32;
-        130.208.251.0/24;
-        }
+    130.208.251.0/24;
+}
 λ > 
 ```
 
