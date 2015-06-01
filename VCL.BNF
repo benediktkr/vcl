@@ -1,0 +1,202 @@
+###
+###  Non-terminals
+###
+ 
+VCL ::= ACL | SUB | BACKEND | DIRECTOR | PROBE | IMPORT | CSRC
+ 
+ACL ::= 'acl' identifier '{' {ACLENTRY} '}'
+SUB ::= 'sub' identifier COMPOUND
+BACKEND ::= 'backend' identifier '{' { ['set|backend'] BACKENDSPEC } '}'
+PROBE ::= 'probe' identifier '{' PROBESPEC '}'
+# VMod imports are new in 3.0
+IMPORT ::= 'import' identifier [ 'from' string ] ';'
+CSRC ::= 'C{' inline-c '}C'
+ 
+RESERVED-ID-V4 ::= vcl_backend_response | vcl_backend_error | vcl_synth
+RESERVED-ID-V3 ::= vcl_fetch | vcl_error | remove | purge
+RESERVED-ID   ::= set 
+ 
+# director definitions - simple variant
+DIRECTOR ::= 'director' dirtype identifier '{' DIRSPEC '}'
+dirtype ::= 'hash' | 'random' | 'client' | 'round-robin' | 'dns'
+ 
+# can do better: specify production rule for every director type
+DIRECTOR ::=
+    'director' ('hash'|'random'|'client') identifier '{' DIRSPEC '}'
+    'director' identifier 'round-robin' '{' DIRSPEC '}'
+    'director' 'dns' identifier '{' DNSSPEC '}'
+ 
+DIRSPEC ::=
+      [ '.' 'retries' '=' uintval ';' ]
+      { '{' '.' BACKENDEF [ '.' 'weight' '=' numval ';' ] '}' }
+ 
+DNSSPEC ::=
+    { '.' BACKENDEF }
+    [ '.' 'ttl' '=' timeval ';' ]
+    [ '.' 'suffix' '=' string ';' ]
+    [ '.' DNSLIST ]
+ 
+DNSLIST ::= '{' { iprange ';' [ BACKENDSPEC ] } '}'
+ 
+BACKENDEF ::= 'backend' '=' ( BACKENDSPEC | identifier ';' )
+ 
+# field spec as used in backend and probe definitions
+SPEC ::= '{' { '.' identifier = fieldval ';' } '}'
+# can do better: devil is in the detail on this one
+BACKENDSPEC ::=
+      '.' 'host' '=' string ';'
+   |  '.' 'port' '=' string ';'
+# wow I had no idea...
+   |  '.' 'host_header' '=' string ';'
+   |  '.' 'connect_timeout' '=' timeval ';'
+   |  '.' 'first_byte_timeout' '='  timeval ';'
+   |  '.' 'between_bytes_timeout' '=' timeval ';'
+   |  '.' 'max_connections '=' uintval ';'
+   |  '.' 'saintmode_treshold '=' uintval ';'
+   |  '.' 'probe' '{' {PROBESPEC} '}' ';'
+# another woww \0/
+   |  '.' 'probe' identifier;
+ 
+PROBESPEC ::=
+      '.' 'url' = string ';'
+   |  '.' 'request' = string ';'
+   |  '.' 'expected_response' = uintval ';'
+   |  '.' 'timeout' = timeval ';'
+   |  '.' 'interval' = timeval ';'
+   |  '.' 'window' = uintval ';'
+   |  '.' 'treshold' =  uintval ';'
+   |  '.' 'initial' = uintval ';'
+ 
+ACLENTRY ::= ['!'] iprange ';' | '(' ['!'] iprange ')' ';' |  ['!'] '(' iprange ')' ';'
+ 
+# totally avoids dangling else yarr
+IFSTMT ::= 'if' CONDITIONAL COMPOUND [ { ('elsif'|'elseif') CONDITIONAL COMPOUND } [ 'else' COMPOUND ]]
+ 
+CONDITIONAL ::= '(' EXPR ')'
+COMPOUND ::= '{' {STMT} '}'
+STMT ::= COMPOUND | IFSTMT | CSRC | ACTIONSTMT ';'
+ACTIONSTMT ::= ACTION | FUNCALL
+ 
+ACTION :==
+   | 'ban' '(' EXPRESSION ')'
+   | 'call' identifier
+# in vcl_fetch only
+# V2.1 esi, 'req.do_esi = true' in later versions
+   | 'esi'
+# in vcl_hash only
+   | 'hash_data' '(' EXPRESSION ')'
+# V4.0 new is new
+   | 'new' identifier
+# V2.1 - V3.0:'panic' keyword moved into vmod_debug in 2012
+   | 'panic' EXPRESSION
+# V2.1: purge expressions are semantically special and correspond to 'ban' in V3
+   | 'purge' '(' EXPRESSION ')'
+   | 'purge_url' '(' EXPRESSION ')'
+# V3.0: purge _this_, moved to RETURNACTION in V4.0
+   | 'purge'
+# rollback the request to before any header changes
+   | 'rollback'
+   | 'set' variable assoper EXPRESSION
+   | 'synthetic' EXPRESSION
+   | 'unset' variable
+# remove is removed in 4.0
+   | 'remove' variable
+# log moved into std vmod in 3.0 and did not work thereafter
+   | 'log' EXPRESSION
+   | RETURNSTMT
+ 
+RETURNSTMT :=
+   | 'return' '(' ( RETURNACTION ) ')'
+ 
+# V2.0: could do actions without return keyword
+RETURNACTION ::= 'deliver' | 'fetch' | 'hash' | 'lookup' | 'pass' | 'pipe' | 'restart' 
+    
+# V3.0 error statements
+   | 'error' [ '(' EXPR(int) [ ',' EXPR(string) ] ')' | EXPR(int) [ EXPR(string) ]
+# V4.0: instead of error statement, still gets special handling
+   |  'synth' '(' EXPR(int) [',' EXPR(string)] ')'
+# V4.0: purge is an action only callable in vcl_recv
+   | 'purge'
+ 
+FUNCALL ::= variable  '(' [ { FUNCALL | expr | string-list } ] ')'
+ 
+EXPRESSION ::= 'true' | 'false' | constant | FUNCALL | variable
+   | '(' EXPRESSION ')'
+   | number '*' number
+   | number '/' number
+   | duration '*' doubleval
+# add two strings without operator in 2.x series
+   | string '+' string
+   | number '+' number
+   | number '-' number
+   | timeval '+' duration
+   | timeval '-' duration
+   | timeval '-' timeval
+   | duration '+' duration
+   | duration '-' duration
+   | EXPRESSION comparison EXPRESSION
+   | '!' EXPRESSION
+   | EXPRESSION '&&' EXPRESSION
+   | EXPRESSION '||' EXPRESSION
+ 
+ 
+###
+### Terminals
+###
+ 
+timeval ::= doubleval timeunit
+duration ::= ['-'] timeval
+doubleval ::= { number [ '.' [number] ] }
+timeunit ::= 'ms' | 's' | 'm' | 'h' | 'd' | 'w'
+uintval ::= { number } # unsigned
+fieldval ::= timeval | doubleval | timeunit | uintval
+constant ::= string | fieldval
+iprange ::= string [ '/' number ]
+variable ::= identifier [ '.' identifier ]
+ 
+comparison ::= '==' | '!=' | '<' | '>' | '<= | '>=' | '~' | '!~'
+assoper ::= '=' | '+=' | '-=' | '*=' | '/=' |
+ 
+comment ::=
+    /* !(/*|*/)* */
+    // !(\n)* $
+    #  !(\n)* $
+ 
+long-string ::=
+   '{"' !("})* '"}'
+ 
+shortstring ::=
+   '"' !(\")* '"'
+ 
+inline-c ::=
+   !(('}C')
+ 
+string ::= shortstring | longstring
+identifier ::= [a-zA-Z][a-zA-Z0-9_-]*
+number ::= [0-9]+
+ 
+ 
+###
+### Lexer tokens
+###
+ 
+ ! % & + * , - . / ; < = > { | } ~ ( )
+ != NEQ
+ !~ NOMATCH
+ ++ INC
+ += INCR
+ *= MUL
+ -- DEC
+ -= DECR
+ /= DIV
+ << SHL
+ <= LEQ
+ == EQ
+ >= GEQ
+ >> SHR
+ || COR
+ && CAND
+ elseif ELSEIF
+ elsif  ELSIF
+ include INCLUDE
+ if    IF
