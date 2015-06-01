@@ -5,7 +5,7 @@ import Data.List
 
 -- ACL ::= 'acl' identifier '{' {ACLENTRY} '}'
 data Acl = Acl Identifier [AclEntry]
-printAcl (Acl identifier entries) = "acl " ++ printIdentifier identifier ++ " {\n" ++ (intercalate "\n" (map printAclEntry entries)) ++ "\n}"
+printAcl (Acl identifier entries) = "acl " ++ printIdentifier identifier ++ " {\n    " ++ (intercalate "\n    " (map printAclEntry entries)) ++ "\n}"
 
 -- ACLENTRY ::= ['!'] iprange ';' | '(' ['!'] iprange ')' ';' |  ['!'] '(' iprange ')' ';'
 data AclEntry = AclEntry IPRange (Maybe Bool)
