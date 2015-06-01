@@ -20,8 +20,8 @@ printAclEntry (AclEntry iprange (Just False)) = "! " ++ printIPRange iprange ++ 
 -- iprange ::= string [ '/' number ]
 data IPRange = IPRange String (Maybe Integer)
 printIPRange :: IPRange -> String
-printIPRange (IPRange iprange Nothing)     = iprange
-printIPRange (IPRange iprange (Just cidr)) = iprange ++ "/" ++ show cidr
+printIPRange (IPRange iprange Nothing)     = "\"" ++ iprange ++ "\""
+printIPRange (IPRange iprange (Just cidr)) = "\"" ++ iprange ++  "\"" ++ "/" ++ show cidr
 
 -- identifier ::= [a-zA-Z][a-zA-Z0-9_-]*
 data Identifier = Identifier String

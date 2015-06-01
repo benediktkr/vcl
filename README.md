@@ -19,8 +19,8 @@ I have submitted an improvement that hasn't been added yet, see
 λ > let acl = Acl (Identifier "testacl") [ip0, ip1]
 λ > putStrLn $ printAcl acl
 acl testacl {
-    ! 10.40.20.1/32;
-    130.208.251.0/24;
+    ! "10.40.20.1"/32;
+    "130.208.251.0"/24;
 }
 λ > 
 ```

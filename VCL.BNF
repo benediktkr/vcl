@@ -151,7 +151,7 @@ timeunit ::= 'ms' | 's' | 'm' | 'h' | 'd' | 'w'
 uintval ::= { number } # unsigned
 fieldval ::= timeval | doubleval | timeunit | uintval
 constant ::= string | fieldval
-iprange ::= string [ '/' number ]
+iprange ::= '"' string '"' [ '/' number ]
 variable ::= identifier [ '.' identifier ]
  
 comparison ::= '==' | '!=' | '<' | '>' | '<= | '>=' | '~' | '!~'
