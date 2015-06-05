@@ -8,11 +8,10 @@ data Acl = Acl Identifier [AclEntry]
 printAcl (Acl identifier entries) = "acl " ++ printIdentifier identifier ++ " {\n    " ++ (intercalate "\n    " (map printAclEntry entries)) ++ "\n}"
 
 -- ACLENTRY ::= ['!'] iprange ';' | '(' ['!'] iprange ')' ';' |  ['!'] '(' iprange ')' ';'
-data AclEntry = AclEntry IPRange (Maybe Bool)
+data AclEntry = AclEntry IPRange | NegativeAclEntry IPRange
 printAclEntry :: AclEntry -> String
-printAclEntry (AclEntry iprange Nothing)      = printIPRange iprange  ++ ";"
-printAclEntry (AclEntry iprange (Just True))  = printIPRange iprange ++ ";"
-printAclEntry (AclEntry iprange (Just False)) = "! " ++ printIPRange iprange ++ ";"
+printAclEntry (AclEntry iprange)         = printIPRange iprange  ++ ";"
+printAclEntry (NegativeAclEntry iprange) = "! " ++ printIPRange iprange ++ ";"
 
 ---- Terminals
 -- For now I'm using strings to define terminals, but should be more precise 
