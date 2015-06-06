@@ -1,3 +1,5 @@
+{-# LANGUAGE InstanceSigs #-}
+
 import Data.Maybe
 import Data.List
 
@@ -5,24 +7,29 @@ import Data.List
 
 -- ACL ::= 'acl' identifier '{' {ACLENTRY} '}'
 data Acl = Acl Identifier [AclEntry]
-printAcl (Acl identifier entries) = "acl " ++ printIdentifier identifier ++ " {\n    " ++ (intercalate "\n    " (map printAclEntry entries)) ++ "\n}"
+instance Show Acl where
+    show :: Acl -> String
+    show (Acl identifier entries) = "acl" ++ show identifier ++ "{\n" ++ (intercalate "\n    " (map show entries)) ++ "\n}"
 
 -- ACLENTRY ::= ['!'] iprange ';' | '(' ['!'] iprange ')' ';' |  ['!'] '(' iprange ')' ';'
-data AclEntry = AclEntry IPRange | NegativeAclEntry IPRange
-printAclEntry :: AclEntry -> String
-printAclEntry (AclEntry iprange)         = printIPRange iprange  ++ ";"
-printAclEntry (NegativeAclEntry iprange) = "! " ++ printIPRange iprange ++ ";"
+data AclEntry = AclEntry IPRange Bool
+instance Show AclEntry where
+    show :: AclEntry -> String
+    show (AclEntry iprange True)  = show iprange ++ ";"
+    show (AclEntry iprange False) = "! " ++ show iprange ++ ";"
 
 ---- Terminals
 -- For now I'm using strings to define terminals, but should be more precise 
 
 -- iprange ::= string [ '/' number ]
 data IPRange = IPRange String (Maybe Integer)
-printIPRange :: IPRange -> String
-printIPRange (IPRange iprange Nothing)     = "\"" ++ iprange ++ "\""
-printIPRange (IPRange iprange (Just cidr)) = "\"" ++ iprange ++  "\"" ++ "/" ++ show cidr
+instance Show IPRange where
+    show :: IPRange -> String
+    show (IPRange iprange Nothing)     = "\"" ++ show iprange ++ "\""
+    show (IPRange iprange (Just cidr)) = "\"" ++ show iprange ++ "\"" ++ "/" ++ show cidr
 
 -- identifier ::= [a-zA-Z][a-zA-Z0-9_-]*
 data Identifier = Identifier String
-printIdentifier :: Identifier -> String
-printIdentifier (Identifier identifier) = identifier
+instance Show Identifier where
+   show :: Identifier -> String
+   show (Identifier identifier) = show identifier
