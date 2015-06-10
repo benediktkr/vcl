@@ -14,14 +14,15 @@ I have submitted an improvement that hasn't been added yet, see
 `VCL.BNF` in this repository.
 
 ```haskell
-λ > let ip0 = AclEntry (IPRange "10.40.20.1" (Just 32)) (Just False)
-λ > let ip1 = AclEntry (IPRange "130.208.251.0" (Just 24)) (Just True)
-λ > let acl = Acl (Identifier "testacl") [ip0, ip1]
-λ > putStrLn $ printAcl acl
-acl testacl {
-    ! "10.40.20.1"/32;
-    "130.208.251.0"/24;
+λ > let ip_a = IPRange "192.168.0.1" $ Just 24
+λ > let ip_b = IPRange "10.40.20.1" Nothing
+λ > let entries = [AclEntry ip_a True, AclEntry ip_b False]
+λ > Acl (Identifier "testacl") entries
+λ> Acl (Identifier "test") [AclEntry ip_a True, AclEntry ip_b False]
+acl"test"{
+  "192.168.0.1"/32;
+  ! "10.40.20.1";
 }
-λ > 
+λ>
 ```
 
